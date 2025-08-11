@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>英文錯誤表｜Error Log Template</title>
+  <style>
+    :root{
+      --bg:#0f172a;          /* slate-900 */
+      --panel:#111827;       /* gray-900 */
+      --soft:#1f2937;        /* gray-800 */
+      --softer:#374151;      /* gray-700 */
+      --text:#e5e7eb;        /* gray-200 */
+      --muted:#9ca3af;       /* gray-400 */
+      --brand:#22d3ee;       /* cyan-400 */
+      --accent:#a78bfa;      /* violet-400 */
+      --ok:#22c55e;          /* green-500 */
+      --warn:#f59e0b;        /* amber-500 */
+      --danger:#ef4444;      /* red-500 */
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#0b1220);color:var(--text);font:16px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
+    .container{max-width:1200px;margin:32px auto;padding:0 16px}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:16px}
+    h1{font-size:clamp(20px,3vw,28px);margin:0;font-weight:800;letter-spacing:.3px}
+    .sub{color:var(--muted);font-size:14px}
+    .toolbar{display:flex;flex-wrap:wrap;gap:8px}
+    button,.chip,select,input[type="text"]{border:1px solid var(--softer);background:rgba(255,255,255,.02);color:var(--text);padding:10px 12px;border-radius:12px}
+    button{cursor:pointer;transition:.2s ease;border-color:transparent;background:linear-gradient(180deg,#1e293b,#111827);box-shadow:0 1px 0 #0004,0 10px 20px #0002}
+    button:hover{transform:translateY(-1px);box-shadow:0 6px 20px #0004}
+    button:active{transform:translateY(0)}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
+    .panel{background:linear-gradient(180deg,#0b1020,#0c1426);border:1px solid #ffffff0f;border-radius:16px;box-shadow:0 10px 30px #0005}
+    .panel .head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #ffffff10}
+    .panel .body{padding:12px 12px 16px}
+    .controls{display:flex;flex-wrap:wrap;gap:8px}
+    .controls > *{min-width:160px}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:#0f1a2e;z-index:1}
+    th,td{padding:12px;border-bottom:1px solid #ffffff10;vertical-align:top}
+    tr{transition:background .15s ease}
+    tr:hover{background:#0f1a2e}
+    td[contenteditable="true"], .editable{outline:none}
+    .muted{color:var(--muted)}
+    .tag{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size:12px;border:1px solid #ffffff14;background:#0e1830}
+    .tag .dot{width:8px;height:8px;border-radius:999px;display:inline-block}
+    .tag.tense .dot{background:var(--accent)}
+    .tag.article .dot{background:var(--warn)}
+    .tag.count .dot{background:#14b8a6}
+    .tag.prep .dot{background:#60a5fa}
+    .tag.sva .dot{background:#f43f5e}
+    .tag.word .dot{background:#f59e0b}
+    .tag.punct .dot{background:#a3e635}
+    .kbd{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;background:#0b1322;border:1px solid #ffffff14;border-bottom-color:#000;box-shadow:inset 0 -2px 0 #0004;color:#cbd5e1;padding:2px 6px;border-radius:6px}
+    .flex{display:flex;gap:8px;align-items:center}
+    .right{margin-left:auto}
+    .pill{border-radius:999px;padding:6px 10px;background:#0d1a2c;border:1px solid #ffffff10}
+    .countbar{height:8px;border-radius:999px;background:#0b1322;overflow:hidden}
+    .countbar>div{height:100%;background:linear-gradient(90deg,var(--brand),var(--accent));width:0}
+    footer{margin-top:20px;color:#9aa3b2;font-size:12px;text-align:center}
+    .hidden{display:none}
+    .danger{color:#fecaca}
+    .ok{color:#bbf7d0}
+    @media(min-width:900px){.grid{grid-template-columns:390px 1fr}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>英文錯誤表｜Error Log</h1>
+        <div class="sub">重質不重量：針對你的高頻錯誤做深度修正與複用（自動儲存到瀏覽器）</div>
+      </div>
+      <div class="toolbar">
+        <button id="addRowBtn">＋ 新增一筆</button>
+        <button id="saveBtn">手動儲存</button>
+        <button id="exportCsvBtn">匯出 CSV</button>
+        <button id="exportJsonBtn">匯出 JSON</button>
+        <button id="importBtn">匯入 JSON</button>
+        <button id="printBtn">列印 / 匯出 PDF</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- 左側：統計與篩選 -->
+      <section class="panel" aria-label="filters">
+        <div class="head"><strong>篩選 / 搜尋</strong><span class="muted">Filter & Search</span></div>
+        <div class="body">
+          <div class="controls">
+            <input id="searchBox" type="text" placeholder="關鍵字搜尋（錯誤句 / 正確句 / 規則）" />
+            <select id="tagFilter">
+              <option value="">全部類別</option>
+              <option value="tense">Tense（時態）</option>
+              <option value="article">Articles（冠詞）</option>
+              <option value="count">Countability（可數/不可數）</option>
+              <option value="prep">Prepositions（介系詞）</option>
+              <option value="sva">S–V Agreement（主謂一致）</option>
+              <option value="word">Word choice（用字）</option>
+              <option value="punct">Punctuation（標點）</option>
+            </select>
+            <select id="sortBy">
+              <option value="date-desc">排序：日期（新→舊）</option>
+              <option value="date-asc">排序：日期（舊→新）</option>
+              <option value="tag">排序：類別</option>
+            </select>
+            <button id="clearFilters">清除篩選</button>
+          </div>
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="pill">總筆數：<strong id="totalCount">0</strong></div>
+            <div class="pill">時態錯誤：<strong id="tenseCount">0</strong></div>
+            <div class="countbar" title="時態錯誤佔比" aria-label="Tense error ratio"><div id="tenseBar"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 右側：表格 -->
+      <section class="panel" aria-label="table">
+        <div class="head"><strong>錯誤三欄表</strong><span class="muted">三欄：錯誤句｜正確句｜規則與為什麼</span></div>
+        <div class="body">
+          <table id="errorTable" aria-describedby="表格：錯誤更正與規則">
+            <thead>
+              <tr>
+                <th style="width:18ch">日期</th>
+                <th>錯誤句（原樣保留）</th>
+                <th>正確句（最佳版本）</th>
+                <th style="width:30%">規則 & 為什麼錯</th>
+                <th style="width:18ch">類別</th>
+                <th style="width:16ch">來源</th>
+                <th style="width:10ch">刪除</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <p>小技巧：選取任一欄即可直接編輯。按 <span class="kbd">Ctrl</span> + <span class="kbd">S</span> 快速儲存。類別可用來篩選高頻錯誤。</p>
+    </footer>
+  </div>
+
+  <input id="fileInput" type="file" accept="application/json" class="hidden" />
+
+  <script>
+    // --- Utilities ---
+    const $ = (s, d=document)=>d.querySelector(s);
+    const $$ = (s, d=document)=>Array.from(d.querySelectorAll(s));
+    const storeKey = 'errorLog.v1';
+
+    const categoryOptions = [
+      {value:'tense', label:'Tense（時態）'},
+      {value:'article', label:'Articles（冠詞）'},
+      {value:'count', label:'Countability（可數/不可數）'},
+      {value:'prep', label:'Prepositions（介系詞）'},
+      {value:'sva', label:'S–V Agreement（主謂一致）'},
+      {value:'word', label:'Word choice（用字）'},
+      {value:'punct', label:'Punctuation（標點）'},
+    ];
+
+    function today(){
+      const d=new Date();
+      const mm=String(d.getMonth()+1).padStart(2,'0');
+      const dd=String(d.getDate()).padStart(2,'0');
+      return `${d.getFullYear()}-${mm}-${dd}`;
+    }
+
+    function newRow(data={}){
+      const tr=document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="date" value="${data.date||today()}"/></td>
+        <td contenteditable="true" spellcheck="false">${escapeHtml(data.error||'')}</td>
+        <td contenteditable="true" spellcheck="false">${escapeHtml(data.correct||'')}</td>
+        <td contenteditable="true" spellcheck="false">${escapeHtml(data.rule||'')}</td>
+        <td>${renderCategorySelect(data.tag||'')}</td>
+        <td contenteditable="true" spellcheck="false" class="muted">${escapeHtml(data.source||'Task 2 / 口說 / 作文')}</td>
+        <td><button class="delBtn" title="刪除此列">刪除</button></td>`;
+      $('#tbody').appendChild(tr);
+    }
+
+    function renderCategorySelect(val){
+      return `<select class="catSel">${categoryOptions.map(o=>`<option value="${o.value}" ${o.value===val?'selected':''}>${o.label}</option>`).join('')}</select>`
+    }
+
+    function serialize(){
+      return $$('#tbody tr').map(tr=>{
+        const [date,inputErr,inputCor,inputRule,tdTag,tdSrc] = [
+          tr.children[0].querySelector('input').value,
+          tr.children[1].innerText.trim(),
+          tr.children[2].innerText.trim(),
+          tr.children[3].innerText.trim(),
+          tr.children[4].querySelector('select').value,
+          tr.children[5].innerText.trim(),
+        ];
+        return {date:date||today(), error:inputErr, correct:inputCor, rule:inputRule, tag:tdTag, source:tdSrc}
+      });
+    }
+
+    function save(silent=false){
+      const data = serialize();
+      localStorage.setItem(storeKey, JSON.stringify(data));
+      updateStats();
+      if(!silent) toast('已儲存');
+    }
+
+    function load(){
+      const raw = localStorage.getItem(storeKey);
+      const data = raw? JSON.parse(raw) : sampleData();
+      $('#tbody').innerHTML='';
+      data.forEach(r=>newRow(r));
+      updateStats();
+    }
+
+    function sampleData(){
+      return [
+        {date: today(), tag:'tense', source:'練習', error:'I had studying in Tamkang since 2023.', correct:'I have studied at Tamkang University since 2023.', rule:'since + 過去時間點 → 現在完成式 (have/has + p.p.)，不可用 had / V‑ing'},
+        {date: today(), tag:'tense', source:'練習', error:'The train was left after I got to station.', correct:'The train had left before I got to the station.', rule:'兩個過去事件：先發生 → 過去完成式 (had + p.p.)；後發生 → 過去簡單式'},
+        {date: today(), tag:'word', source:'Task 2', error:'University of Harvard', correct:'Harvard University', rule:'專有名詞固定語序'},
+      ];
+    }
+
+    function exportCSV(){
+      const rows = serialize();
+      const headers = ['date','error','correct','rule','tag','source'];
+      const csv = [headers.join(',')].concat(rows.map(r=>headers.map(h=>csvEscape(r[h]||'')).join(','))).join('\n');
+      download('error-log.csv', csv, 'text/csv');
+    }
+    function exportJSON(){
+      download('error-log.json', JSON.stringify(serialize(),null,2), 'application/json');
+    }
+    function download(filename, content, type){
+      const blob=new Blob([content],{type});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;a.download=filename;a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),500);
+    }
+    function csvEscape(v){
+      const s=String(v).replace(/"/g,'""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    }
+    function escapeHtml(s=''){return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
+
+    function importJSON(file){
+      const reader=new FileReader();
+      reader.onload=e=>{
+        try{
+          const arr=JSON.parse(e.target.result);
+          if(!Array.isArray(arr)) throw new Error('JSON 必須是陣列');
+          localStorage.setItem(storeKey, JSON.stringify(arr));
+          load();
+          toast('匯入成功');
+        }catch(err){ alert('匯入失敗：'+err.message) }
+      };
+      reader.readAsText(file);
+    }
+
+    function updateStats(){
+      const rows=serialize();
+      const total=rows.length;
+      const tense=rows.filter(r=>r.tag==='tense').length;
+      $('#totalCount').textContent=total;
+      $('#tenseCount').textContent=tense;
+      const ratio=total? Math.round(100*tense/total):0;
+      $('#tenseBar').style.width=ratio+'%';
+      $('#tenseBar').title = `時態錯誤佔比 ${ratio}%`;
+      applyFilters();
+    }
+
+    // --- Filtering & Sorting ---
+    function applyFilters(){
+      const q = $('#searchBox').value.toLowerCase();
+      const tag = $('#tagFilter').value;
+      const sort = $('#sortBy').value;
+      const rows = $$('#tbody tr');
+      rows.forEach(tr=>{
+        const [date, err, cor, rule, tagSel, src] = [
+          tr.children[0].querySelector('input').value,
+          tr.children[1].innerText.toLowerCase(),
+          tr.children[2].innerText.toLowerCase(),
+          tr.children[3].innerText.toLowerCase(),
+          tr.children[4].querySelector('select').value,
+          tr.children[5].innerText.toLowerCase(),
+        ];
+        const hit = (!q || [err,cor,rule,src].some(s=>s.includes(q))) && (!tag || tagSel===tag);
+        tr.style.display = hit? '' : 'none';
+      });
+      // sorting
+      const trs = $$('#tbody tr').filter(tr=>tr.style.display!=='none');
+      trs.sort((a,b)=>{
+        const va = a.children[0].querySelector('input').value;
+        const vb = b.children[0].querySelector('input').value;
+        if(sort==='date-asc') return va.localeCompare(vb);
+        if(sort==='date-desc') return vb.localeCompare(va);
+        if(sort==='tag'){
+          const ta=a.children[4].querySelector('select').value;
+          const tb=b.children[4].querySelector('select').value;
+          return ta.localeCompare(tb) || va.localeCompare(vb);
+        }
+        return 0;
+      });
+      const tbody=$('#tbody');
+      trs.forEach(tr=>tbody.appendChild(tr));
+    }
+
+    // --- Toast ---
+    function toast(text){
+      const t=document.createElement('div');
+      t.textContent=text;
+      t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0b1322;border:1px solid #ffffff20;padding:10px 14px;border-radius:10px;box-shadow:0 10px 30px #0006;z-index:50;opacity:0;transition:.2s';
+      document.body.appendChild(t);
+      requestAnimationFrame(()=>{t.style.opacity=1});
+      setTimeout(()=>{t.style.opacity=0;setTimeout(()=>t.remove(),200)},1200);
+    }
+
+    // --- Events ---
+    $('#addRowBtn').addEventListener('click',()=>{ newRow({}); save(true); });
+    $('#saveBtn').addEventListener('click',()=>save());
+    $('#exportCsvBtn').addEventListener('click',exportCSV);
+    $('#exportJsonBtn').addEventListener('click',exportJSON);
+    $('#importBtn').addEventListener('click',()=>$('#fileInput').click());
+    $('#fileInput').addEventListener('change',e=>{ if(e.target.files[0]) importJSON(e.target.files[0]); e.target.value=''; });
+    $('#printBtn').addEventListener('click',()=>window.print());
+
+    document.addEventListener('keydown',e=>{
+      if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); save(); }
+    });
+
+    ['searchBox','tagFilter','sortBy'].forEach(id=>$("#"+id).addEventListener('input',applyFilters));
+    $('#clearFilters').addEventListener('click',()=>{ $('#searchBox').value=''; $('#tagFilter').value=''; applyFilters(); });
+
+    document.addEventListener('input',e=>{
+      if(e.target.matches('td[contenteditable="true"], input[type="date"], .catSel')){
+        save(true);
+      }
+    });
+
+    document.addEventListener('click',e=>{
+      if(e.target.classList.contains('delBtn')){
+        if(confirm('確定要刪除此列嗎？')){ e.target.closest('tr').remove(); save(); }
+      }
+    });
+
+    // Init
+    load();
+  </script>
+</body>
+</html>
